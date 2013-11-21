@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 import os.path
-import datetime
+import time
+import subprocess
 
 class GitStatus:
 
@@ -17,39 +18,41 @@ class GitStatus:
 
 	__newExpires = 0
 	__newIndex = ""
-	__newHead = ""
-	__newFetchHead = ""
-	__newStatus = ""
+	__newHead = "head"
+	__newFetchHead = "fhead"
+	__newStatus = "st"
 
 
 	def __init__(self, project, path):
 		self.__project = project
 		self.__path = path
-		self.__cacheFile = os.path.expanduser('~') + '/.gitcache/' + self.__project
+		self.__cacheFile = os.path.expanduser('~') + '/.gitcache/' + self.__project + '_new'
 
 		cache = self.__readCacheFile()
 		cache = map(lambda c: c.strip(), cache)
 
-		self.__cacheExpires = os.path.getmtime(self.__cacheFile)
-		self.__cacheIndex = cache[0]
-		# self.__cacheHead = cache[1]
-		# self.__cacheFetchHead = cache[2]
-		self.__cacheStatus = cache[3] 
+		if len(cache) > 0:
+			self.__cacheExpires = int(os.path.getmtime(self.__cacheFile))
+			self.__cacheIndex = int(cache[0])
+			self.__cacheHead = cache[1]
+			self.__cacheFetchHead = cache[2]
+			self.__cacheStatus = cache[3] 
 
-		self.__newExpires = datetime.datetime.now().time()
-		self.__newIndex = str(os.path.getmtime(self.__path + '/.git/index'))
+		self.__newExpires = time.time()
+		self.__newIndex = int(os.path.getmtime(self.__path + '/.git/index'))
 
 
 	def __repr__(self):
-		return 'GitStatus: project={project} expires={expires} cache={cache}'.format(
+		return 'GitStatus: project={project} expires={expires} cache={cache} new={new}'.format(
 			project=self.__project, expires=self.__cacheExpires,
-			cache=[self.__cacheIndex, self.__cacheHead, self.__cacheFetchHead, self.__cacheStatus])
+			cache=[self.__cacheIndex, self.__cacheHead, self.__cacheFetchHead, self.__cacheStatus],
+			new=[self.__newIndex, self.__newHead, self.__newFetchHead, self.__newStatus])
 
 
 	def writeCacheFile(self):
 		try:
-			with open(self.__cacheFile + '_new', 'w') as f:
-				f.write(self.__newIndex + '\n')
+			with open(self.__cacheFile, 'w') as f:
+				f.write(str(self.__newIndex) + '\n')
 				f.write(self.__newHead + '\n')
 				f.write(self.__newFetchHead + '\n')
 				f.write(self.__newStatus)
@@ -61,11 +64,23 @@ class GitStatus:
 	def isCacheDirty(self):
 		expired = self.isCacheExpired()
 		indexDirty = self.__isIndexDirty()
+		print "expired: " + str(expired)
+		print "indexDirty: " + str(indexDirty)
+		self.__getGitStatus()
 		return True if expired or indexDirty else False
 
 
 	def isCacheExpired(self):
-		return True if self.__newExpires != self.__cacheExpires else False
+		difference = self.__newExpires - 60 - self.__cacheExpires
+		return True if difference > 0 else False
+
+
+	def __getGitStatus(self):
+		result = subprocess.check_output(["git", "status", "-sb"])
+		output = result.split("\n")
+
+		status = output[0]
+		print status
 
 
 	def __isIndexDirty(self):
@@ -91,5 +106,9 @@ class GitStatus:
 myFile = '/cygdrive/s/git-hub/inxz/dotfiles'
 GitStatus = GitStatus('dotfiles', myFile)
 print GitStatus
-print GitStatus.isCacheDirty()
-GitStatus.writeCacheFile()
+
+if GitStatus.isCacheDirty():
+	print "dirty, writing cache file"
+	GitStatus.writeCacheFile()
+else:
+	print "Cache hit"
