@@ -27,14 +27,16 @@ class GitStatus:
 	__project = ""
 	__path = ""
 	__remote = ""
+	__debug = False
 	__cacheFile = ""
 	__data = None
 
 
-	def __init__(self, project, path, remote = "origin"):
+	def __init__(self, project, path, remote = "origin", debug = False):
 		self.__project = project
 		self.__path = path
 		self.__remote = remote
+		self.__debug = debug
 		self.__cacheFile = os.path.expanduser('~') + '/.gitcache/' + self.__project + '_new'
 
 		self.__data = self.__getCachedGitData()
@@ -55,15 +57,16 @@ class GitStatus:
 			cacheDirty = self.isCacheDirty(data)
 
 		if cacheDirty:
-			print "Cache is dirty, updating git status and writing cache file."
+			self.__print("Cache is dirty, updating git status and writing cache file.")
 			gitStatus = self.__getGitStatus()
 			data.status = gitStatus
 			self.__data = data
 			self.writeCacheFile(data)
+			self.__data.status = "'" + self.__data.status
 		else:
-			print "Cache is up2date, returning cached status."
+			self.__print("Cache is up2date, returning cached status.")
 
-		print self.__data.status
+		return self.__data.status
 
 
 	def isCacheDirty(self, data):
@@ -88,7 +91,7 @@ class GitStatus:
 
 			return GitData(expires, index, head, fetchHead, status)
 		else:
-			print "Can not read GitData from cache file."
+			self.__print("Can not read GitData from cache file.")
 			return None
 
 
@@ -150,7 +153,7 @@ class GitStatus:
 		headBranch = headFile.split('/')
 		headBranch = headBranch[-1]
 		fetchHeadFile = self.__path + '/.git/refs/remotes/' + self.__remote + '/' + headBranch
-		print "FetchHead file is: " + fetchHeadFile
+		self.__print("FetchHead file is: " + fetchHeadFile)
 
 		try:
 			with open(fetchHeadFile) as f:
@@ -194,8 +197,51 @@ class GitStatus:
 	def __getGitStatus(self):
 		result = subprocess.check_output(["git", "status", "-sb"])
 		output = result.split("\n")
+		status = output.pop(0)
 
-		status = output[0]
+		changed = 0
+		new= 0
+		added = 0
+		modified = 0
+		deleted = 0
+		moved = 0
+
+		for line in output:
+			line = line.strip()
+
+			if line == "":
+				continue
+
+			changed += 1
+
+			if line.startswith("??"):
+				new += 1
+			elif line.startswith("A"):
+				added += 1
+			elif line.startswith("M"):
+				modified += 1
+			elif line.startswith("D"):
+				deleted += 1
+			elif line.startswith("R"):
+				moved += 1
+
+		status += " *:" + str(changed)
+
+		if new > 0:
+			status += " ?:" + str(new)
+
+		if added > 0:
+			status += " A:" + str(added)
+
+		if modified > 0:
+			status += " M:" + str(modified)
+
+		if deleted > 0:
+			status += " D:" + str(deleted)
+
+		if moved > 0:
+			status += " R:" + str(moved)
+
 		return status
 
 
@@ -215,6 +261,11 @@ class GitStatus:
 		return lines 
 
 
+	def __print(self, string):
+		if self.__debug:
+			print string
+
+
 myFile = '/cygdrive/s/git//hub/inxz/dotfiles'
 GitStatus = GitStatus('dotfiles', myFile)
-GitStatus.get()
+print GitStatus.get()
