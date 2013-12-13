@@ -32,14 +32,16 @@ class GitStatus:
 	__data = None
 
 
-	def __init__(self, project, path, remote = "origin", debug = False):
-		self.__project = project
-		self.__path = path
+	def __init__(self, path, remote = "origin", debug = False):
 		self.__remote = remote
 		self.__debug = debug
-		self.__cacheFile = os.path.expanduser('~') + '/.gitcache/' + self.__project + '_new'
 
-		self.__data = self.__getCachedGitData()
+		self.__path = self.__findGitDirectory(path)
+
+		if self.__path:
+			self.__project = self.__getProjectName(self.__path)
+			self.__cacheFile = os.path.expanduser('~') + '/.gitcache/' + self.__project + '_new'
+			self.__data = self.__getCachedGitData()
 
 
 	def __repr__(self):
@@ -48,7 +50,24 @@ class GitStatus:
 			cache=[self.__data.index, self.__data.head, self.__data.fetchHead, self.__data.status])
 
 
+	def __findGitDirectory(self, path):
+		while path != "/" and not os.path.isdir(path + '/.git'):
+			path = os.path.dirname(path)
+
+		if not path == "/":
+			return path
+		else:
+			return None
+
+
+	def __getProjectName(self, gitPath):
+		return os.path.basename(gitPath)
+
+
 	def get(self):
+		if not self.__path:
+			return ""
+
 		data = self.__getRefreshedGitData()
 
 		if not self.__data:
@@ -195,7 +214,7 @@ class GitStatus:
 
 
 	def __getGitStatus(self):
-		result = subprocess.check_output(["git", "status", "-sb"])
+		result = subprocess.check_output(["git", "--work-tree=" + self.__path, "status", "-sb"])
 		output = result.split("\n")
 		status = output.pop(0)
 
@@ -266,6 +285,5 @@ class GitStatus:
 			print string
 
 
-myFile = '/cygdrive/s/git//hub/inxz/dotfiles'
-GitStatus = GitStatus('dotfiles', myFile)
+GitStatus = GitStatus(os.getcwd())
 print GitStatus.get()
