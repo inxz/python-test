@@ -149,7 +149,7 @@ class GitStatus:
 
 			headFile = self.__path + '/.git/' + head
 		except IOError:
-			print "Failed to open file for reading."
+			print "HeadFile: Failed to open file for reading (HEAD)."
 
 		return headFile
 
@@ -162,7 +162,7 @@ class GitStatus:
 				headCommit = f.read().strip()
 			f.close()
 		except IOError:
-			print "Failed to open file for reading."
+			print "Head: Failed to open file for reading (" + headFile + ")."
 
 		return headCommit
 
@@ -174,12 +174,16 @@ class GitStatus:
 		fetchHeadFile = self.__path + '/.git/refs/remotes/' + self.__remote + '/' + headBranch
 		self.__print("FetchHead file is: " + fetchHeadFile)
 
-		try:
-			with open(fetchHeadFile) as f:
-				fetchHeadCommit = f.read().strip()
-			f.close()
-		except IOError:
-			print "Failed to open file for reading."
+		if os.path.isfile(fetchHeadFile):
+			try:
+				with open(fetchHeadFile) as f:
+					fetchHeadCommit = f.read().strip()
+				f.close()
+			except IOError:
+				print "FetchHead: Failed to open file for reading (" + fetchHeadFile + ")."
+		else:
+			# If repository is cloned but no fetch is called yet, FetchHead does not exist.
+			self.__print("FetchHeadFile does not exist yet: " + fetchHeadFile)
 
 		return fetchHeadCommit
 
