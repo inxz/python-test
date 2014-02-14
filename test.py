@@ -253,23 +253,20 @@ class GitStatus:
 				moved += 1
 
 		status += " *:" + str(changed)
-
-		if new > 0:
-			status += " ?:" + str(new)
-
-		if added > 0:
-			status += " A:" + str(added)
-
-		if modified > 0:
-			status += " M:" + str(modified)
-
-		if deleted > 0:
-			status += " D:" + str(deleted)
-
-		if moved > 0:
-			status += " R:" + str(moved)
+		status += self.__formatStatus("?", new)
+		status += self.__formatStatus("A", added)
+		status += self.__formatStatus("M", modified)
+		status += self.__formatStatus("D", deleted)
+		status += self.__formatStatus("R", moved)
 
 		return status
+
+
+	def __formatStatus(self, status, count):
+		if count > 0:
+			return " " + status + ":" + str(count)
+		else:
+			return ""
 
 
 	def __readCacheFile(self):
