@@ -28,13 +28,15 @@ class GitStatus:
 	__path = ""
 	__remote = ""
 	__debug = False
+	__gitBinary = ""
 	__cacheFile = ""
 	__data = None
 
 
-	def __init__(self, path, remote = "origin", debug = False):
+	def __init__(self, path, remote = "origin", debug = False, gitBinary = "git"):
 		self.__remote = remote
 		self.__debug = debug
+		self.__gitBinary = gitBinary
 
 		self.__path = self.__findGitDirectory(path)
 
@@ -220,7 +222,7 @@ class GitStatus:
 
 
 	def __getGitStatus(self):
-		result = subprocess.check_output(["git", "--work-tree=" + self.__path, "status", "-sb"])
+		result = subprocess.check_output([self.__gitBinary, "--work-tree=" + self.__path, "status", "-sb"])
 		output = result.splitlines()
 		status = output.pop(0)
 
@@ -291,5 +293,5 @@ class GitStatus:
 			print(string)
 
 
-GitStatus = GitStatus(os.getcwd(), debug=False)
+GitStatus = GitStatus(os.getcwd(), debug=False, gitBinary="/home/Timo.Gmell/git/bin/git.exe")
 print(GitStatus.get())
