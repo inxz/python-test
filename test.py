@@ -71,6 +71,7 @@ class GitStatus:
 		data = self.__getRefreshedGitData()
 
 		if not self.__data:
+			self.__print("Data is empty, set cache dirty.")
 			cacheDirty = True
 		else:
 			cacheDirty = self.isCacheDirty(data)
@@ -94,6 +95,7 @@ class GitStatus:
 		headDirty = self.__isHeadDirty(data)
 		fetchHeadDirty = self.__isFetchHeadDirty(data)
 
+		self.__print("expired: " + str(expired) + " indexDirty: " + str(indexDirty) + " headDirty: " + str(headDirty) + " fetchHeadDirty: " + str(fetchHeadDirty))
 		return True if expired or indexDirty or headDirty or fetchHeadDirty else False
 
 
@@ -149,7 +151,7 @@ class GitStatus:
 
 			headFile = self.__path + '/.git/' + head
 		except IOError:
-			print "HeadFile: Failed to open file for reading (HEAD)."
+			print("HeadFile: Failed to open file for reading (HEAD).")
 
 		return headFile
 
@@ -162,14 +164,14 @@ class GitStatus:
 				headCommit = f.read().strip()
 			f.close()
 		except IOError:
-			print "Head: Failed to open file for reading (" + headFile + ")."
+			print("Head: Failed to open file for reading (" + headFile + ").")
 
 		return headCommit
 
 
 	def __getGitFetchHead(self, headFile):
 		fetchHeadCommit = ""
-		headBranch = headFile.split('/')
+		headBranch = headFile.split('/.git/refs/heads/')
 		headBranch = headBranch[-1]
 		fetchHeadFile = self.__path + '/.git/refs/remotes/' + self.__remote + '/' + headBranch
 		self.__print("FetchHead file is: " + fetchHeadFile)
@@ -180,7 +182,7 @@ class GitStatus:
 					fetchHeadCommit = f.read().strip()
 				f.close()
 			except IOError:
-				print "FetchHead: Failed to open file for reading (" + fetchHeadFile + ")."
+				print("FetchHead: Failed to open file for reading (" + fetchHeadFile + ").")
 		else:
 			# If repository is cloned but no fetch is called yet, FetchHead does not exist.
 			self.__print("FetchHeadFile does not exist yet: " + fetchHeadFile)
@@ -197,7 +199,7 @@ class GitStatus:
 				f.write(data.status)
 			f.close()
 		except IOError:
-			print 'Failed to write file: {}'.format(self.__cacheFile)
+			print('Failed to write file: {}'.format(self.__cacheFile))
 
 
 	def __isCacheExpired(self, data):
@@ -219,7 +221,7 @@ class GitStatus:
 
 	def __getGitStatus(self):
 		result = subprocess.check_output(["git", "--work-tree=" + self.__path, "status", "-sb"])
-		output = result.split("\n")
+		output = result.splitlines()
 		status = output.pop(0)
 
 		changed = 0
@@ -277,17 +279,17 @@ class GitStatus:
 					lines = f.readlines()
 				f.close()
 			except IOError:
-				print 'Failed to open file for reading: {}'.format(self.__cacheFile)
+				print('Failed to open file for reading: {}'.format(self.__cacheFile))
 		else:
-			print 'File does not exist: {}'.format(self.__cacheFile)
+			print('File does not exist: {}'.format(self.__cacheFile))
 
 		return lines 
 
 
 	def __print(self, string):
 		if self.__debug:
-			print string
+			print(string)
 
 
-GitStatus = GitStatus(os.getcwd())
-print GitStatus.get()
+GitStatus = GitStatus(os.getcwd(), debug=False)
+print(GitStatus.get())
