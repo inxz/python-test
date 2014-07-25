@@ -161,12 +161,16 @@ class GitStatus:
 	def __getGitHead(self, headFile):
 		headCommit = ""
 
-		try:
-			with open(headFile) as f:
-				headCommit = f.read().strip()
-			f.close()
-		except IOError:
-			print("Head: Failed to open file for reading (" + headFile + ").")
+		if os.path.isfile(headFile):
+			try:
+				with open(headFile) as f:
+					headCommit = f.read().strip()
+				f.close()
+			except IOError:
+				print("Head: Failed to open file for reading (" + headFile + ").")
+		else:
+			# It is possible that the HeadFile does not exist.
+			self.__print("HeadFile does not exist yet: " + headFile)
 
 		return headCommit
 
@@ -280,7 +284,8 @@ class GitStatus:
 			except IOError:
 				print('Failed to open file for reading: {}'.format(self.__cacheFile))
 		else:
-			print('File does not exist: {}'.format(self.__cacheFile))
+			# If the cache does not exist, it will be created later.
+			self.__print('File does not exist: {}'.format(self.__cacheFile))
 
 		return lines 
 
@@ -290,5 +295,5 @@ class GitStatus:
 			print(string)
 
 
-GitStatus = GitStatus(os.getcwd(), debug=False, gitBinary="/home/Timo.Gmell/git/bin/git.exe")
+GitStatus = GitStatus(os.getcwd(), debug=False, gitBinary="/usr/bin/git")
 print(GitStatus.get())
