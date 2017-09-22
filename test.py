@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os.path
 import time
@@ -103,7 +103,7 @@ class GitStatus:
 
 	def __getCachedGitData(self):
 		cache = self.__readCacheFile()
-		cache = map(lambda c: c.strip(), cache)
+		cache = list(map(lambda c: c.strip(), cache))
 
 		if len(cache) > 0:
 			expires = int(os.path.getmtime(self.__cacheFile))
@@ -133,7 +133,12 @@ class GitStatus:
 
 
 	def __getGitIndex(self):
-		return int(os.path.getmtime(self.__path + '/.git/index'))
+		indexFile = self.__path + '/.git/index'
+
+		if os.path.isfile(indexFile):
+			return int(os.path.getmtime(indexFile))
+		else:
+			return 0
 
 
 	def __getGitHeadFile(self):
@@ -228,7 +233,7 @@ class GitStatus:
 	def __getGitStatus(self):
 		result = subprocess.check_output([self.__gitBinary, "--work-tree=" + self.__path, "status", "-sb"])
 		output = result.splitlines()
-		status = output.pop(0)
+		status = output.pop(0).decode(encoding='UTF-8')
 
 		changed = 0
 		new= 0
@@ -238,7 +243,7 @@ class GitStatus:
 		moved = 0
 
 		for line in output:
-			line = line.strip()
+			line = line.strip().decode(encoding='UTF-8')
 
 			if line == "":
 				continue
